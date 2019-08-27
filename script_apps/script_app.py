@@ -1,5 +1,22 @@
 import adbase as ad
 
+"""AppDaemon App For Writing HA like Script.
+apps.yaml parameters:
+| - service: Service to be called. 
+| - service_data: The data to be used by the service call
+| - delay: delay in seconds. This supports floats like 0.1
+| - wait: This is still expanding, but for now, supports state wait. Whereby the script pauses until a state is true
+"""
+
+"""
+By using the script entity, for example script.living_room_kodi, other caps can be used to start,
+check script running state, or stop the script if running
+
+self.set_state("script.living_room_kodi", state="start"): used to start the script
+self.set_state("script.living_room_kodi", state="stop"): used to stop a running script
+self.get_state("script.living_room_kodi"): returns state of the script. "running" if busy and "idle" if not
+"""
+
 class ScriptApp(ad.ADBase):
  
     def initialize(self): 
@@ -10,6 +27,7 @@ class ScriptApp(ad.ADBase):
 
         friendly_name = self.name.replace("_", " ").title() + " Script"
         self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name)
+
 
         self.adbase.listen_state(self.process_entity, self.script_entity)
                 
