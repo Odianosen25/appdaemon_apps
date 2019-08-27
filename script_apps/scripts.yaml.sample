@@ -1,4 +1,4 @@
-script_living_room_chromecast:
+living_room_select_chromecast:
   module: script_app
   class: ScriptApp
   plugin: NONE
