@@ -1,0 +1,44 @@
+script_living_room_chromecast:
+  module: script_app
+  class: ScriptApp
+  plugin: NONE
+  log_level: DEBUG
+  priority: 1
+  script:
+    - wait: state
+      entity_id: media_player.living_room_kodi
+      state: paused
+      namespace: hass
+
+    - service: script/turn_on
+      service_data:
+        entity_id: script.lr_sb_opt_in
+        namespace: hass
+
+    - delay: 2
+
+    - service: script/turn_on
+      service_data:
+        entity_id: script.lr_tv_hdmi_3
+        namespace: hass
+
+    - delay: 2
+    
+    - service: script/turn_on
+      service_data:
+        entity_id: script.lr_tv_power_on
+        namespace: hass
+      
+    - delay: 2
+    
+    - service: script/turn_on
+      service_data:
+        entity_id: script.lr_sb_opt_in
+        namespace: hass
+    
+    - delay: 12
+  
+    - service: script/turn_on
+      service_data:
+        entity_id: script.lr_tv_hdmi_3
+        namespace: hass
