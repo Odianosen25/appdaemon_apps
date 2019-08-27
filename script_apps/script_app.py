@@ -6,10 +6,15 @@ class ScriptApp(ad.ADBase):
         self.adbase = self.get_ad_api() 
         self.script_timer = None
         self.script_state = None
+        self.script_entity = f"script.{self.name.lower()}"
+        self.adbase.set_state(self.script_entity, state="idle")
+
+        self.adbase.listen_state(self.process_entity, self.script_entity)
                 
     def run_script(self):
         self.cancel_script() #incase it was running already
         self.script_timer = self.adbase.run_in(self.process_scripts, 0)
+        self.adbase.set_state(self.script_entity, state="running")
 
     def process_scripts(self, kwargs):
         script = self.args["script"]
@@ -54,6 +59,8 @@ class ScriptApp(ad.ADBase):
                 return
 
             self.script_timer = self.adbase.run_in(self.process_scripts, delay, index=index)
+        else:
+            self.adbase.set_state(self.script_entity, state="idle")
 
     def wait_state_execute(self, entity, attribute, old, new, kwargs):
         index = kwargs["index"]
@@ -70,9 +77,17 @@ class ScriptApp(ad.ADBase):
         if self.script_state != None:
             self.adbase.cancel_listen_state(self.script_state)
             self.script_state = None
+        
+        self.adbase.set_state(self.script_entity, state="idle")
 
     def script_running(self):
         if self.script_timer == None and self.script_state == None:
             return False
         else:
             return True
+
+    def process_entity(self, entity, attribute, old, new, kwargs):
+        if new == "start":
+            self.run_script()
+        elif new == "stop":
+            self.cancel_script()
