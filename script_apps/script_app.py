@@ -7,7 +7,9 @@ class ScriptApp(ad.ADBase):
         self.script_timer = None
         self.script_state = None
         self.script_entity = f"script.{self.name.lower()}"
-        self.adbase.set_state(self.script_entity, state="idle")
+
+        friendly_name = self.name.replace("_", " ").title() + " Script"
+        self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name)
 
         self.adbase.listen_state(self.process_entity, self.script_entity)
                 
@@ -91,3 +93,6 @@ class ScriptApp(ad.ADBase):
             self.run_script()
         elif new == "stop":
             self.cancel_script()
+
+    def terminate(self):
+        self.cancel_script()
