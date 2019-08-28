@@ -13,9 +13,9 @@ apps.yaml parameters:
 By using the script entity, for example script.living_room_kodi, other caps can be used to start,
 check script running state, or stop the script if running
 
-self.set_state("script.living_room_kodi", state="start"): used to start the script
-self.set_state("script.living_room_kodi", state="stop"): used to stop a running script
-self.get_state("script.living_room_kodi"): returns state of the script. "running" if busy and "idle" if not
+self.fire_event("script/run", entity_id="script.living_room_kodi", namespace="default"): used to run the script
+self.fire_event("script/stop", entity_id="script.living_room_kodi", namespace="default"): used to stop a running script
+self.get_state("script.living_room_kodi", namespace="default"): returns state of the script. "running" if busy and "idle" if not
 """
 
 class ScriptApp(ad.ADBase):
@@ -30,7 +30,8 @@ class ScriptApp(ad.ADBase):
         self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name)
 
 
-        self.adbase.listen_state(self.process_entity, self.script_entity)
+        self.adbase.listen_event(self.process_entity, "script/run", entity_id=self.script_entity)
+        self.adbase.listen_event(self.process_entity, "script/stop", entity_id=self.script_entity)
                 
     def run_script(self):
         self.cancel_script() #incase it was running already
@@ -110,10 +111,10 @@ class ScriptApp(ad.ADBase):
         else:
             return True
 
-    def process_entity(self, entity, attribute, old, new, kwargs):
-        if new == "start":
+    def process_entity(self, event, data, kwargs):
+        if event == "script/run":
             self.run_script()
-        elif new == "stop":
+        elif event == "script/stop":
             self.cancel_script()
 
     def terminate(self):
