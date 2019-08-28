@@ -6,6 +6,7 @@ apps.yaml parameters:
 | - service_data: The data to be used by the service call
 | - delay: delay in seconds. This supports floats like 0.1
 | - wait: This is still expanding, but for now, supports state wait. Whereby the script pauses until a state is true
+| - repeat: This will repeat the previous tasks ran, and keep the script in a continous loop until stopped. USE WITH CAUTION
 """
 
 """
@@ -77,6 +78,9 @@ class ScriptApp(ad.ADBase):
                     namespace = job["namespace"]
                     self.script_state = self.adbase.listen_state(self.wait_state_execute, entity_id, attribute=attribute, new=state, namespace=namespace, index=index, oneshot=True, immediate=True)
                 return
+            
+            elif "repeat" in job:
+                index = 0 #start all over
 
             self.script_timer = self.adbase.run_in(self.process_scripts, delay, index=index)
         else:
