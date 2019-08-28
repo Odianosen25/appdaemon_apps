@@ -4,6 +4,7 @@ living_room_select_chromecast:
   plugin: NONE
   log_level: DEBUG
   priority: 1
+  alias: Living Room Select Chromecast
   script:
     - wait: state
       entity_id: media_player.living_room_kodi
