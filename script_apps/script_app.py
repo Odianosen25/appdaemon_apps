@@ -25,7 +25,7 @@ class ScriptApp(ad.ADBase):
         self.script_state = None
         self.script_entity = f"script.{self.name.lower()}"
 
-        friendly_name = self.name.replace("_", " ").title() + " Script"
+        friendly_name = self.args.get("alias", self.name.replace("_", " ").title() + " Script")
         self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name)
 
 
