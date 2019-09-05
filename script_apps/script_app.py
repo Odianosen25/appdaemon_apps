@@ -1,4 +1,5 @@
 import adbase as ad
+import copy
 
 """AppDaemon App For Writing HA like Script.
 apps.yaml parameters:
@@ -23,11 +24,12 @@ class ScriptApp(ad.ADBase):
     def initialize(self): 
         self.adbase = self.get_ad_api() 
         self.script_timer = None
-        self.script_state = None
+        self.script_state_timer = None
         self.script_entity = f"script.{self.name.lower()}"
 
         friendly_name = self.args.get("alias", self.name.replace("_", " ").title() + " Script")
-        self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name)
+        script_len = len(self.args["script"]) - 1
+        self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name, index=0, lenght=script_len)
 
 
         self.adbase.listen_event(self.process_entity, "script/run", entity_id=self.script_entity)
@@ -43,13 +45,14 @@ class ScriptApp(ad.ADBase):
         if not isinstance(script, list): #ensure it is a list
             script = [script]
 
-        index = kwargs.get("index", 0) #start from beinging
+        index = self.adbase.get_state(self.script_entity, attribute="index", copy=False, default=0) #start from beinging
 
         self.adbase.log("__function__: Running Script: {} and Index: {}".format(script, index), level="DEBUG")
         self.script_timer = None
+        self.script_state_timer = None
 
         if (len(script) - 1) >= index:
-            job = script[index] #pick the script
+            job = copy.deepcopy(script[index]) #pick the script
             delay = 0
             index += 1 #increase it by 1
             if "service" in job:
@@ -69,6 +72,23 @@ class ScriptApp(ad.ADBase):
             elif "log" in job:
                 self.adbase.log(job["log"])
             
+            elif "event" in job:
+                event = job["event"]
+                event_data = job["event_data"]
+                self.adbase.fire_event(event, **event_data)
+
+            elif "condition" in job:
+                condition = job["condition"]
+                conditions = job["conditions"]
+                if condition == "state":
+                    entity_id = conditions["entity_id"]
+                    state = conditions["state"]
+                    attribute = conditions.get("attribute", None)
+                    namespace = conditions.get("namespace", "default")
+                    if self.adbase.get_state(entity_id, attribute=attribute, copy=False, namespace=namespace) != state:
+                        self.cancel_script() #just stop the script
+                        return
+            
             elif "wait" in job:
                 wait_type = job["wait"]
 
@@ -76,21 +96,36 @@ class ScriptApp(ad.ADBase):
                     entity_id = job["entity_id"]
                     state = job["state"]
                     attribute = job.get("attribute", None)
-                    namespace = job["namespace"]
-                    self.script_state = self.adbase.listen_state(self.wait_state_execute, entity_id, attribute=attribute, new=state, namespace=namespace, index=index, oneshot=True, immediate=True)
+                    namespace = job.get("namespace", "default")
+                    self.script_state_timer = self.adbase.listen_state(self.wait_state_execute, entity_id, attribute=attribute, new=state, namespace=namespace, oneshot=True, immediate=True)
+                    self.adbase.set_state(self.script_entity, index=index)
+                    timeout = job.get("timeout", 0)
+
+                    if timeout > 0:
+                        self.script_timer = self.adbase.run_in(self.timed_out, timeout)
                 return
             
             elif "repeat" in job:
+                repeat = job.get("repeat", -1) #if == -1, continously run
                 index = 0 #start all over
 
-            self.script_timer = self.adbase.run_in(self.process_scripts, delay, index=index)
+            self.adbase.set_state(self.script_entity, index=index)
+            self.script_timer = self.adbase.run_in(self.process_scripts, delay)
         else:
-            self.adbase.set_state(self.script_entity, state="idle")
+            self.adbase.set_state(self.script_entity, state="idle", index=0)
 
     def wait_state_execute(self, entity, attribute, old, new, kwargs):
-        index = kwargs["index"]
-        self.script_timer = self.adbase.run_in(self.process_scripts, 0, index=index) #continue script
-        self.script_state = None
+        if self.script_timer != None:
+            self.adbase.cancel_timer(self.script_timer)
+
+        self.script_timer = self.adbase.run_in(self.process_scripts, 0) #continue script
+        self.script_state_timer = None
+
+    def timed_out(self, kwargs):
+        if self.script_state_timer != None:
+            self.adbase.cancel_listen_state(self.script_state_timer)
+
+        self.script_timer = self.adbase.run_in(self.process_scripts, 0) #continue script
 
     def cancel_script(self):
         self.adbase.log("__function__: Cancelling Script with Timer handle {}".format(self.script_timer), level = "DEBUG")
@@ -99,14 +134,14 @@ class ScriptApp(ad.ADBase):
             self.adbase.cancel_timer(self.script_timer)
             self.script_timer = None
 
-        if self.script_state != None:
-            self.adbase.cancel_listen_state(self.script_state)
-            self.script_state = None
+        if self.script_state_timer != None:
+            self.adbase.cancel_listen_state(self.script_state_timer)
+            self.script_state_timer = None
         
-        self.adbase.set_state(self.script_entity, state="idle")
+        self.adbase.set_state(self.script_entity, state="idle", index=0)
 
     def script_running(self):
-        if self.script_timer == None and self.script_state == None:
+        if self.script_timer == None and self.script_state_timer == None:
             return False
         else:
             return True
