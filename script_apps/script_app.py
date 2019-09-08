@@ -15,7 +15,16 @@ By using the script entity, for example script.living_room_kodi, other caps can 
 check script running state, or stop the script if running
 
 self.fire_event("script/run", entity_id="script.living_room_kodi", namespace="default"): used to run the script
+or 
+self.call_service("script/living_room_kodi", task="run", namespace="default)
+
 self.fire_event("script/stop", entity_id="script.living_room_kodi", namespace="default"): used to stop a running script
+or
+self.call_service("script/living_room_kodi", task="stop", namespace="default)
+
+self.call_service("script/living_room_kodi", task="pause", namespace="default)
+self.call_service("script/living_room_kodi", task="continue", namespace="default)
+
 self.get_state("script.living_room_kodi", namespace="default"): returns state of the script. "running" if busy and "idle" if not
 """
 
