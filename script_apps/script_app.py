@@ -26,18 +26,25 @@ class ScriptApp(ad.ADBase):
         self.script_timer = None
         self.script_state_timer = None
         self.script_entity = f"script.{self.name.lower()}"
+        service = f"script/{self.name.lower()}"
+
+        self.adbase.run_in(self.register_script_services, 0, service=service)
 
         friendly_name = self.args.get("alias", self.name.replace("_", " ").title() + " Script")
         script_len = len(self.args["script"]) - 1
         self.adbase.set_state(self.script_entity, state="idle", friendly_name=friendly_name, index=0, lenght=script_len)
 
-
+        #
+        #Events
+        #
         self.adbase.listen_event(self.process_entity, "script/run", entity_id=self.script_entity)
         self.adbase.listen_event(self.process_entity, "script/stop", entity_id=self.script_entity)
+        self.adbase.listen_event(self.process_entity, "script/pause", entity_id=self.script_entity)
+        self.adbase.listen_event(self.process_entity, "script/continue", entity_id=self.script_entity)
                 
     def run_script(self):
         self.cancel_script() #incase it was running already
-        self.script_timer = self.adbase.run_in(self.process_scripts, 0)
+        self.continue_script()
         self.adbase.set_state(self.script_entity, state="running")
 
     def process_scripts(self, kwargs):
@@ -118,17 +125,22 @@ class ScriptApp(ad.ADBase):
         if self.script_timer != None:
             self.adbase.cancel_timer(self.script_timer)
 
-        self.script_timer = self.adbase.run_in(self.process_scripts, 0) #continue script
+        self.continue_script() #continue script
         self.script_state_timer = None
 
     def timed_out(self, kwargs):
         if self.script_state_timer != None:
             self.adbase.cancel_listen_state(self.script_state_timer)
 
-        self.script_timer = self.adbase.run_in(self.process_scripts, 0) #continue script
+        self.continue_script() #continue script
 
     def cancel_script(self):
         self.adbase.log("__function__: Cancelling Script with Timer handle {}".format(self.script_timer), level = "DEBUG")
+        self.pause_script()
+        self.adbase.set_state(self.script_entity, state="idle", index=0)
+    
+    def pause_script(self):
+        self.adbase.log("__function__: Pausing Script with Timer handle {}".format(self.script_timer), level = "DEBUG")
 
         if self.script_timer != None:
             self.adbase.cancel_timer(self.script_timer)
@@ -137,8 +149,11 @@ class ScriptApp(ad.ADBase):
         if self.script_state_timer != None:
             self.adbase.cancel_listen_state(self.script_state_timer)
             self.script_state_timer = None
-        
-        self.adbase.set_state(self.script_entity, state="idle", index=0)
+    
+    def continue_script(self):
+        index = self.adbase.get_state(self.script_entity, attribute="index", copy=False, default=0) #start from beinging
+        self.adbase.log("__function__: Continuing Script from index {}".format(index), level = "DEBUG")
+        self.script_timer = self.adbase.run_in(self.process_scripts, 0)
 
     def script_running(self):
         if self.script_timer == None and self.script_state_timer == None:
@@ -151,6 +166,28 @@ class ScriptApp(ad.ADBase):
             self.run_script()
         elif event == "script/stop":
             self.cancel_script()
+        elif event =="script/pause":
+            self.pause_script()
+        elif event == "script/continue":
+            self.continue_script()
+
+    def register_script_services(self, kwargs):
+        self.adbase.register_service(kwargs["service"], self.script_services)
+
+    async def script_services(self, namespace, domain, service, kwargs):
+        task = kwargs.get("task", None)
+
+        if task == "run":
+            await ad.utils.run_in_executor(self, self.run_script)
+        
+        elif task == "stop":
+            await ad.utils.run_in_executor(self, self.cancel_script)
+        
+        elif task == "pause":
+            await ad.utils.run_in_executor(self, self.pause_script)
+        
+        elif task == "continue":
+            await ad.utils.run_in_executor(self, self.continue_script)
 
     def terminate(self):
         self.cancel_script()
