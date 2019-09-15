@@ -1,0 +1,12 @@
+storage:
+  module: storage
+  class: Storage
+  plugin: NONE
+  namespaces:
+    mqtt:
+      - zigbee2mqtt.main_door
+      - zigbee2mqtt.living_room_t-h-p_sensor
+      - zigbee2mqtt.hallway_t-h-p_sensor
+      
+    default:
+      - person.somebody
