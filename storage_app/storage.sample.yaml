@@ -2,6 +2,7 @@ storage:
   module: storage
   class: Storage
   plugin: NONE
+  priority: 1
   namespaces:
     mqtt:
       - zigbee2mqtt.main_door
