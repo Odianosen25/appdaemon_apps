@@ -75,12 +75,7 @@ class ScriptApp(ad.ADBase):
                 service = job["service"]
                 service_data = job["service_data"]
 
-                if service == "state/set":
-                    entity_id = service_data["entity_id"]
-                    del service_data["entity_id"]
-                    self.adbase.set_state(entity_id, **service_data)
-                else:
-                    self.adbase.call_service(service, **service_data) 
+                self.adbase.call_service(service, **service_data)
             
             elif "delay" in job:
                 delay = job["delay"]
