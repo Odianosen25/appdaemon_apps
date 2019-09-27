@@ -179,19 +179,21 @@ class ScriptApp(ad.ADBase):
         self.adbase.register_service(kwargs["service"], self.script_services)
 
     async def script_services(self, namespace, domain, service, kwargs):
+        self.adbase.log("__function__: namespace %s, domain %s, service %s, kwargs %s", namespace, domain, service, kwargs, level="DEBUG")
+
         task = kwargs.get("task", None)
 
         if task == "run":
-            await ad.utils.run_in_executor(self, self.run_script)
+            await self.adbase.run_in_executor(self.run_script)
         
         elif task == "stop":
-            await ad.utils.run_in_executor(self, self.cancel_script)
+            await self.adbase.run_in_executor(self.cancel_script)
         
         elif task == "pause":
-            await ad.utils.run_in_executor(self, self.pause_script)
+            await self.adbase.run_in_executor(self.pause_script)
         
         elif task == "continue":
-            await ad.utils.run_in_executor(self, self.continue_script)
+            await self.adbase.run_in_executor(self.continue_script)
 
     def terminate(self):
         self.cancel_script()
