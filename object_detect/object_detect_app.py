@@ -58,8 +58,10 @@ class ObjectDetect(ad.ADBase):
             self._video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, int(height))
 
         except:
-            self._video_capture.release()
-            self._video_capture = None
+            if self._video_capture != None:
+                self._video_capture.release()
+                self._video_capture = None
+            
             self.adapi.error(traceback.format_exc(), level="ERROR")
            
         if self._video_capture != None and self._video_capture.isOpened():
