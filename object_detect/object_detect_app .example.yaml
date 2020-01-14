@@ -1,0 +1,5 @@
+object_detect:
+  module: object_detect_app
+  class: ObjectDetect
+  camera_url: rtsp://192.168.x.x
+  state_topic: object/detect/living_room
