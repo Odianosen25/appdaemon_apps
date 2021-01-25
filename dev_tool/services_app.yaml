@@ -1,0 +1,6 @@
+services_app:
+  module: services_app
+  class: ServicesApp
+  plugin: NONE
+  priority: 1
+  #log_level: DEBUG
