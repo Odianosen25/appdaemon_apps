@@ -1,0 +1,72 @@
+#
+# Main arguments, all optional
+#
+title: AppDaemon Services
+widget_dimensions: [122, 120]
+widget_margins: [5, 5]
+columns: 12
+
+
+ctf:
+    title: Total Callbacks
+    title2: Fired
+    widget_type: sensor
+    entity: sensor.callbacks_total_fired
+    namespace: admin
+
+caf:
+    title: Total Callbacks
+    title2: Executed
+    widget_type: sensor
+    entity: sensor.callbacks_total_executed
+    namespace: admin
+
+cte:
+    title: Avg Callbacks
+    title2: Fired
+    widget_type: sensor
+    entity: sensor.callbacks_average_fired
+    namespace: admin
+
+cae:
+    title: Avg Callbacks
+    title2: Executed
+    widget_type: sensor
+    entity: sensor.callbacks_average_executed
+    namespace: admin
+
+select_namespace:
+    title: Select Namespace
+    widget_type: input_select
+    entity: input_select.service_namespace
+    namespace: default
+
+select_service:
+    title: Select Service
+    widget_type: input_select
+    entity: input_select.select_service
+    namespace: default
+
+service_args:
+    title: Service Args
+    widget_type: input_text
+    entity: input_text.service_args
+    namespace: default
+
+service_input_boolean:
+    title: Service Run
+    widget_type: input_boolean
+    entity: input_boolean.service_args
+    icon_on: mdi-cursor-default-click-outline
+    icon_off: mdi-cursor-default-click-outline
+    namespace: default
+
+
+#
+# Includes (Optional)
+#
+
+layout:
+    - include: header
+    - ctf(3x1), caf(3x1), cte, cae, service_input_boolean
+    - select_namespace(3x1), select_service(3x1), service_args(3x1)
